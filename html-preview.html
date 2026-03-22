@@ -1,0 +1,598 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>China Port Softwood Log Inventory Report (Past 10 Months)</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 24px 20px 40px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .header .badge {
+      display: inline-block;
+      background: linear-gradient(90deg, #22d3ee, #3b82f6);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #67e8f9, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.3;
+    }
+    .header .subtitle {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    /* ── KPI Cards ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 14px;
+      padding: 18px 16px 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .kpi-card.blue::before  { background: linear-gradient(90deg, #3b82f6, #22d3ee); }
+    .kpi-card.green::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .kpi-card.red::before   { background: linear-gradient(90deg, #ef4444, #f97316); }
+    .kpi-card.purple::before{ background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .kpi-card.amber::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+    .kpi-label {
+      font-size: 11px;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #f1f5f9;
+      line-height: 1;
+    }
+    .kpi-value span {
+      font-size: 13px;
+      font-weight: 400;
+      color: #94a3b8;
+      margin-left: 3px;
+    }
+    .kpi-sub {
+      margin-top: 6px;
+      font-size: 11px;
+    }
+    .kpi-sub.up   { color: #34d399; }
+    .kpi-sub.down { color: #f87171; }
+    .kpi-sub.neu  { color: #94a3b8; }
+
+    /* ── Chart Cards ── */
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 16px;
+      padding: 22px 20px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 11px;
+      color: #475569;
+      margin-bottom: 16px;
+    }
+
+    #chartMain   { width: 100%; height: 360px; }
+    #chartBar    { width: 100%; height: 300px; }
+    #chartPie    { width: 100%; height: 280px; }
+    #chartTrend  { width: 100%; height: 260px; }
+
+    /* ── Two-column layout ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 680px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* ── Data Table ── */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    thead tr { background: #262c42; }
+    th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid #2d3148;
+    }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #1a1f30;
+      color: #cbd5e1;
+    }
+    tbody tr:hover { background: #252b3d; }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .tag-up    { background: rgba(16,185,129,.15); color: #34d399; }
+    .tag-down  { background: rgba(239,68,68,.15);  color: #f87171; }
+    .tag-flat  { background: rgba(148,163,184,.12); color: #94a3b8; }
+    .tag-low   { background: rgba(245,158,11,.15);  color: #fbbf24; }
+
+    /* ── Notes ── */
+    .note {
+      background: #161b28;
+      border: 1px solid #2d3148;
+      border-left: 3px solid #3b82f6;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.7;
+      margin-top: 20px;
+    }
+    .note strong { color: #94a3b8; }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #334155;
+      margin-top: 28px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<div class="header">
+  <div class="badge">MARKET INTELLIGENCE</div>
+  <h1>China Port Softwood Log Inventory Monitor</h1>
+  <div class="subtitle">Coverage: May 2025 — Mid-March 2026 &nbsp;|&nbsp; Sources: Mysteel · XinShiJi Futures · CITIC Construction Investment Futures</div>
+</div>
+
+<!-- ══ KPI Cards ══ -->
+<div class="kpi-grid">
+  <div class="kpi-card blue">
+    <div class="kpi-label">Current Inventory (Mar 13)</div>
+    <div class="kpi-value">304<span>mn m³</span></div>
+    <div class="kpi-sub down">▼ 2.88% WoW</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="kpi-label">Period Peak</div>
+    <div class="kpi-value">335<span>mn m³</span></div>
+    <div class="kpi-sub neu">End of May 2025</div>
+  </div>
+  <div class="kpi-card amber">
+    <div class="kpi-label">Period Trough</div>
+    <div class="kpi-value">254<span>mn m³</span></div>
+    <div class="kpi-sub neu">Dec 26, 2025</div>
+  </div>
+  <div class="kpi-card green">
+    <div class="kpi-label">Post-CNY Build</div>
+    <div class="kpi-value">+50<span>mn m³</span></div>
+    <div class="kpi-sub up">▲ Dec-end → Feb-end</div>
+  </div>
+  <div class="kpi-card purple">
+    <div class="kpi-label">Radiata Pine Share (Dec)</div>
+    <div class="kpi-value">85<span>%</span></div>
+    <div class="kpi-sub neu">216 / 254 mn m³</div>
+  </div>
+</div>
+
+<!-- ══ Main Line Chart ══ -->
+<div class="card">
+  <div class="card-title">📈 National Port Softwood Log Inventory Trend (mn m³)</div>
+  <div class="card-desc">Representative data points per period — reflects inventory dynamics over the past ~10 months</div>
+  <div id="chartMain"></div>
+</div>
+
+<!-- ══ Two-column: Bar + Donut ══ -->
+<div class="two-col">
+  <div class="card">
+    <div class="card-title">📊 Monthly Inventory Comparison</div>
+    <div class="card-desc">End-of-month (or mid-month) representative values</div>
+    <div id="chartBar"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🥧 Inventory by Species (Dec 2025)</div>
+    <div class="card-desc">Based on XinShiJi Futures annual report data</div>
+    <div id="chartPie"></div>
+  </div>
+</div>
+
+<!-- ══ Change Chart ══ -->
+<div class="card">
+  <div class="card-title">🔄 Inventory Change by Period (mn m³)</div>
+  <div class="card-desc">Positive = inventory build; Negative = inventory drawdown</div>
+  <div id="chartTrend"></div>
+</div>
+
+<!-- ══ Detail Table ══ -->
+<div class="card">
+  <div class="card-title">📋 Inventory Detail Data</div>
+  <div class="card-desc">7 Provinces · 13 Ports — Softwood Log Inventory Summary</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date / Period</th>
+          <th>Total Inventory (mn m³)</th>
+          <th>Change</th>
+          <th>Status</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>End of May 2025</td>
+          <td><strong>335</strong></td>
+          <td>−15 mn m³ MoM</td>
+          <td><span class="tag tag-up">Period Peak</span></td>
+          <td>Mysteel / Zhuochuang</td>
+        </tr>
+        <tr>
+          <td>Jul 14, 2025</td>
+          <td><strong>322</strong></td>
+          <td>−1 mn m³ WoW</td>
+          <td><span class="tag tag-down">Drawdown</span></td>
+          <td>XinShiJi Futures Weekly</td>
+        </tr>
+        <tr>
+          <td>Aug 1, 2025</td>
+          <td><strong>317</strong></td>
+          <td>Flat WoW</td>
+          <td><span class="tag tag-down">Drawdown</span></td>
+          <td>Mysteel</td>
+        </tr>
+        <tr>
+          <td>Early Sep 2025</td>
+          <td><strong>282</strong></td>
+          <td>~−35 mn m³ MoM</td>
+          <td><span class="tag tag-down">Fast Drawdown</span></td>
+          <td>Mysteel</td>
+        </tr>
+        <tr>
+          <td>Oct 17, 2025</td>
+          <td><strong>292</strong></td>
+          <td>−2.34% WoW</td>
+          <td><span class="tag tag-down">Drawdown</span></td>
+          <td>Mysteel / Founder Mid-term</td>
+        </tr>
+        <tr>
+          <td>Oct 24, 2025</td>
+          <td><strong>294</strong></td>
+          <td>−2.74% WoW</td>
+          <td><span class="tag tag-low">9-Month Low</span></td>
+          <td>Mysteel</td>
+        </tr>
+        <tr>
+          <td>End of Nov 2025</td>
+          <td><strong>~310</strong></td>
+          <td>~+16 mn m³</td>
+          <td><span class="tag tag-up">Build</span></td>
+          <td>Galaxy Futures Report</td>
+        </tr>
+        <tr>
+          <td>Dec 5, 2025</td>
+          <td><strong>288</strong></td>
+          <td>−3.03% WoW</td>
+          <td><span class="tag tag-down">Drawdown</span></td>
+          <td>Mysteel / Jin10 Flash</td>
+        </tr>
+        <tr>
+          <td>Dec 26, 2025</td>
+          <td><strong>254</strong></td>
+          <td>−13 mn m³ YoY</td>
+          <td><span class="tag tag-low">Annual Low</span></td>
+          <td>XinShiJi Futures Annual Report</td>
+        </tr>
+        <tr>
+          <td>Jan 9, 2026</td>
+          <td><strong>269</strong></td>
+          <td>+0.75% WoW</td>
+          <td><span class="tag tag-up">Pre-CNY Build</span></td>
+          <td>Mysteel</td>
+        </tr>
+        <tr>
+          <td>Feb 28, 2026</td>
+          <td><strong>304</strong></td>
+          <td>~+35 mn m³ MoM</td>
+          <td><span class="tag tag-up">Post-CNY Build</span></td>
+          <td>CITIC CI Futures / Mysteel</td>
+        </tr>
+        <tr>
+          <td>Mar 6, 2026</td>
+          <td><strong>313</strong></td>
+          <td>+4.68% WoW</td>
+          <td><span class="tag tag-up">Continued Build</span></td>
+          <td>Mysteel</td>
+        </tr>
+        <tr>
+          <td>Mar 13, 2026</td>
+          <td><strong>304</strong></td>
+          <td>−2.88% WoW</td>
+          <td><span class="tag tag-flat">Latest Data</span></td>
+          <td>Mysteel</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ Notes ══ -->
+<div class="note">
+  <strong>📌 Data Notes:</strong><br>
+  1. Inventory figures cover <strong>softwood logs across 7 provinces &amp; 13 ports in China</strong> (Radiata Pine + North American species + Spruce/Fir). Hardwood logs are excluded.<br>
+  2. Raw data collected by <strong>Mysteel (Wood-Link / Steel-Link)</strong>; figures cited in research reports from XinShiJi Futures, CITIC Construction Investment Futures, etc., are drawn from the same source.<br>
+  3. The <strong>WeChat public account "XinShiJi Futures"</strong> requires login and cannot be scraped directly. This report cross-references reposts on open financial platforms and the same underlying data source.<br>
+  4. Some periods (e.g., June) have sparse data points; values shown in charts are interpolated for trend illustration only and do not represent exact month-end figures.
+</div>
+
+<div class="footer">
+  Compiled: March 22, 2026 &nbsp;|&nbsp; For reference only — not investment advice
+</div>
+
+<script>
+// ── Data ──
+const months = [
+  'May-25 End','Jul-25 Mid','Aug-25 Early','Sep-25 Early',
+  'Oct-25 End','Nov-25 End','Dec-25 Early','Dec-25 End',
+  'Jan-26 Early','Feb-26 End','Mar-26 Early','Mar-26 Mid'
+];
+const values = [335, 322, 317, 282, 294, 310, 288, 254, 269, 304, 313, 304];
+
+// Color gradient by value
+const colorMap = values.map(v => {
+  if (v >= 320) return '#f87171';
+  if (v >= 300) return '#fb923c';
+  if (v >= 280) return '#facc15';
+  if (v >= 260) return '#4ade80';
+  return '#22d3ee';
+});
+
+// ── Main Line Chart ──
+const chartMain = echarts.init(document.getElementById('chartMain'));
+chartMain.setOption({
+  backgroundColor: 'transparent',
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: '#1e2130',
+    borderColor: '#3b82f6',
+    textStyle: { color: '#e2e8f0', fontSize: 12 },
+    formatter: p => `<b>${p[0].axisValue}</b><br/>Inventory: <b style="color:#67e8f9">${p[0].value} mn m³</b>`
+  },
+  grid: { top: 30, right: 20, bottom: 50, left: 62 },
+  xAxis: {
+    type: 'category',
+    data: months,
+    axisLine: { lineStyle: { color: '#2d3148' } },
+    axisLabel: { color: '#64748b', fontSize: 10, rotate: 20 },
+    axisTick: { show: false }
+  },
+  yAxis: {
+    type: 'value',
+    min: 230, max: 360,
+    axisLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { color: '#64748b', fontSize: 11, formatter: '{value}' },
+    splitLine: { lineStyle: { color: '#1e2535', type: 'dashed' } },
+    name: 'mn m³',
+    nameTextStyle: { color: '#475569', fontSize: 10 }
+  },
+  visualMap: {
+    show: false,
+    type: 'continuous',
+    seriesIndex: 0,
+    min: 240, max: 340,
+    inRange: { color: ['#22d3ee','#4ade80','#facc15','#fb923c','#f87171'] }
+  },
+  series: [{
+    type: 'line',
+    data: values,
+    smooth: true,
+    lineStyle: { width: 3 },
+    symbolSize: 8,
+    symbol: 'circle',
+    areaStyle: {
+      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: 'rgba(99,179,237,0.35)' },
+        { offset: 1, color: 'rgba(99,179,237,0)' }
+      ])
+    },
+    markPoint: {
+      data: [
+        { type: 'max', name: 'Peak', itemStyle: { color: '#f87171' }, label: { color: '#fff', fontSize: 10 } },
+        { type: 'min', name: 'Trough', itemStyle: { color: '#22d3ee' }, label: { color: '#fff', fontSize: 10 } }
+      ]
+    },
+    markLine: {
+      silent: true,
+      lineStyle: { color: '#475569', type: 'dashed', width: 1 },
+      data: [{ type: 'average', name: 'Avg', label: { color: '#94a3b8', fontSize: 10, formatter: 'Avg {c}' } }]
+    }
+  }]
+});
+
+// ── Bar Chart ──
+const chartBar = echarts.init(document.getElementById('chartBar'));
+const shortMonths = ['May-E','Jul-M','Aug-E','Sep-E','Oct-E','Nov-E','Dec-E','Dec-L','Jan-E','Feb-E','Mar-E','Mar-M'];
+chartBar.setOption({
+  backgroundColor: 'transparent',
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: '#1e2130',
+    borderColor: '#475569',
+    textStyle: { color: '#e2e8f0', fontSize: 11 },
+    formatter: p => `${p[0].axisValue}<br/><b style="color:#67e8f9">${p[0].value} mn m³</b>`
+  },
+  grid: { top: 16, right: 10, bottom: 44, left: 56 },
+  xAxis: {
+    type: 'category',
+    data: shortMonths,
+    axisLine: { lineStyle: { color: '#2d3148' } },
+    axisLabel: { color: '#64748b', fontSize: 10 },
+    axisTick: { show: false }
+  },
+  yAxis: {
+    type: 'value',
+    min: 230, max: 360,
+    axisLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { color: '#64748b', fontSize: 10 },
+    splitLine: { lineStyle: { color: '#1e2535', type: 'dashed' } }
+  },
+  series: [{
+    type: 'bar',
+    data: values.map((v, i) => ({ value: v, itemStyle: { color: colorMap[i], borderRadius: [5, 5, 0, 0] } })),
+    barMaxWidth: 30
+  }]
+});
+
+// ── Donut Chart (Species Composition) ──
+const chartPie = echarts.init(document.getElementById('chartPie'));
+chartPie.setOption({
+  backgroundColor: 'transparent',
+  tooltip: {
+    backgroundColor: '#1e2130',
+    borderColor: '#475569',
+    textStyle: { color: '#e2e8f0', fontSize: 12 },
+    formatter: p => `${p.name}<br/><b style="color:${p.color}">${p.value} mn m³ (${p.percent}%)</b>`
+  },
+  legend: {
+    bottom: 4,
+    textStyle: { color: '#94a3b8', fontSize: 11 },
+    itemWidth: 12, itemHeight: 12
+  },
+  series: [{
+    type: 'pie',
+    radius: ['42%', '68%'],
+    center: ['50%', '44%'],
+    data: [
+      { value: 216, name: 'Radiata Pine', itemStyle: { color: '#3b82f6' } },
+      { value: 15,  name: 'Spruce/Fir',  itemStyle: { color: '#10b981' } },
+      { value: 7,   name: 'North American', itemStyle: { color: '#f59e0b' } },
+      { value: 16,  name: 'Other',        itemStyle: { color: '#6366f1' } }
+    ],
+    label: {
+      color: '#cbd5e1',
+      fontSize: 11,
+      formatter: '{b}\n{d}%'
+    },
+    labelLine: { lineStyle: { color: '#475569' } },
+    itemStyle: { borderRadius: 5, borderColor: '#0f1117', borderWidth: 2 },
+    emphasis: { scale: true, scaleSize: 6 }
+  }]
+});
+
+// ── Change Bar Chart ──
+const chartTrend = echarts.init(document.getElementById('chartTrend'));
+const changeLabels = ['May→Jul','Jul→Aug','Aug→Sep','Sep→Oct','Oct→Nov','Nov→Dec-E','Dec-E→Dec-L','Dec-L→Jan','Jan→Feb','Feb→Mar-E','Mar-E→Mar-M'];
+const changeValues = [-13, -5, -35, 12, 16, -22, -34, 15, 35, 9, -9];
+chartTrend.setOption({
+  backgroundColor: 'transparent',
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: '#1e2130',
+    borderColor: '#475569',
+    textStyle: { color: '#e2e8f0', fontSize: 11 },
+    formatter: p => `${p[0].axisValue}<br/><b style="color:${p[0].value >= 0 ? '#34d399' : '#f87171'}">${p[0].value >= 0 ? '+' : ''}${p[0].value} mn m³</b>`
+  },
+  grid: { top: 20, right: 16, bottom: 56, left: 52 },
+  xAxis: {
+    type: 'category',
+    data: changeLabels,
+    axisLine: { lineStyle: { color: '#2d3148' } },
+    axisLabel: { color: '#64748b', fontSize: 9, rotate: 22 },
+    axisTick: { show: false }
+  },
+  yAxis: {
+    type: 'value',
+    axisLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { color: '#64748b', fontSize: 10 },
+    splitLine: { lineStyle: { color: '#1e2535', type: 'dashed' } }
+  },
+  series: [{
+    type: 'bar',
+    data: changeValues.map(v => ({
+      value: v,
+      itemStyle: {
+        color: v >= 0
+          ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#34d399' }, { offset: 1, color: '#059669' }])
+          : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#f87171' }, { offset: 1, color: '#b91c1c' }]),
+        borderRadius: v >= 0 ? [5, 5, 0, 0] : [0, 0, 5, 5]
+      }
+    })),
+    barMaxWidth: 28,
+    label: {
+      show: true,
+      position: v => v >= 0 ? 'top' : 'bottom',
+      formatter: p => (p.value >= 0 ? '+' : '') + p.value,
+      color: '#94a3b8',
+      fontSize: 9
+    }
+  }]
+});
+
+// Responsive
+window.addEventListener('resize', () => {
+  chartMain.resize();
+  chartBar.resize();
+  chartPie.resize();
+  chartTrend.resize();
+});
+</script>
+</body>
+</html>
